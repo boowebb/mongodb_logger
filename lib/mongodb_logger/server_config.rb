@@ -6,11 +6,11 @@ require 'active_support/core_ext'
 # TODO: Dry this class with logger class
 module MongodbLogger
   class ServerConfig
-    
+
     DEFAULT_COLLECTION_SIZE = 250.megabytes
-    
+
     class << self
-      
+
       def set_config(config_path)
         if File.file?(config_path)
           config_file = File.new(config_path)
@@ -18,57 +18,68 @@ module MongodbLogger
         else
           raise "Config file not found"
         end
-        
-        @db_configuration = {
-          'host' => 'localhost',
-          'port' => 27017}.merge(config)
-        @db_configuration["collection"] ||= "production_log"
-        @db = Mongo::Connection.new(@db_configuration['host'],
-                                    @db_configuration['port'],
-                                    :connect => true).db(@db_configuration['database'])
 
-        if @db_configuration['username'] && @db_configuration['password']
-          @authenticated = @db.authenticate(@db_configuration['username'],
-                                                          @db_configuration['password'])
+        # default to localhost
+        @mongo_cfg = {
+          'host' => 'localhost',
+          'port' => 27017
+        }.merge(config)
+
+        # specify a collection or default to name based on environment
+        @mongo_cfg["collection"] ||= "#{ Rails.env }_log"
+
+        # configure mongo based hosts (replset) or host (standalone)
+        if @mongo_cfg['hosts']
+          replset  = Mongo::MongoReplicaSetClient.new(@mongo_cfg['hosts'].map { |h| "#{h}:#{@mongo_cfg['port']}" },
+                                                     :refresh_mode => false,
+                                                     :read         => :secondary_preferred)
+          @mongodb = replset.db(@mongo_cfg["database"])
+        else
+          # if in dev or staging mode, it's ok to connect to a mongo slave server
+          slave_ok  = Rails.env.development? || Rails.env.staging?
+          @mongodb  = Mongo::MongoClient.new(@mongo_cfg["host"], @mongo_cfg["port"], :slave_ok => slave_ok).db(@mongo_cfg["database"])
         end
 
+        # see if we need to authenticate
+        @mongodb.authenticate(MONGO_CONFIG["username"], MONGO_CONFIG["password"]) unless MONGO_CONFIG["username"].nil?
+
         set_collection
       end
-      
+
       def set_config_for_testing(config_path)
         set_config(config_path)
-        create_collection unless @db.collection_names.include?(@db_configuration["collection"])
+        create_collection unless @mongodb.collection_names.include?(@mongo_cfg["collection"])
         set_collection
       end
-      
+
       def create_collection
         capsize = DEFAULT_COLLECTION_SIZE
-        capsize = @db_configuration['capsize'].to_i if @db_configuration['capsize']
-        @db.create_collection(@db_configuration["collection"],
+        capsize = @mongo_cfg['capsize'].to_i if @mongo_cfg['capsize']
+        @mongodb.create_collection(@mongo_cfg["collection"],
                                             {:capped => true, :size => capsize})
       end
-       
-       
+
+
       def set_collection
-        @collection = @db[@db_configuration["collection"]]
+        @collection = @mongodb[@mongo_cfg["collection"]]
       end
-      
+
       def get_config
-        @db_configuration
+        @mongo_cfg
       end
-      
+
       def authenticated?
         @authenticated
       end
-      
+
       def collection_name
-        @db_configuration["collection"]
+        @mongo_cfg["collection"]
       end
-      
+
       def db
-        @db
+        @mongodb
       end
-      
+
       def collection
         @collection
       end

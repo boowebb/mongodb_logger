@@ -13,7 +13,7 @@ module MongodbLogger
 
     DEFAULT_COLLECTION_SIZE = 250.megabytes
     # Looks for configuration files in this order
-    CONFIGURATION_FILES = ["mongodb_logger.yml", "mongoid.yml", "database.yml"]
+    CONFIGURATION_FILES = ['mongo.yml', 'mongodb_logger.yml', 'mongoid.yml', 'database.yml']
     LOG_LEVEL_SYM = [:debug, :info, :warn, :error, :fatal, :unknown]
 
     attr_reader :db_configuration, :mongo_connection, :mongo_collection_name, :mongo_collection, :mongo_connection_type
@@ -24,7 +24,7 @@ module MongodbLogger
       internal_initialize
     rescue => e
       # should use a config block for this
-      Rails.env.production? ? (raise e) : (puts "MongodbLogger WARNING: Using BufferedLogger due to exception: " + e.message)
+      Rails.env.production? ? (raise e) : (puts 'MongodbLogger WARNING: Using BufferedLogger due to exception: ' + e.message)
     ensure
       if disable_file_logging?
         @log            = ::Logger.new(STDOUT)
@@ -72,7 +72,7 @@ module MongodbLogger
 
       runtime = Benchmark.measure{ yield }.real if block_given?
     rescue Exception => e
-      add(3, e.message.to_s + "\n" + e.backtrace.join("\n"))
+      add(3, e.message.to_s + '\n' + e.backtrace.join('\n'))
       # log exceptions
       @mongo_record[:is_exception] = true
       # Reraise the exception for anyone else who cares
@@ -133,14 +133,14 @@ module MongodbLogger
         if @db_configuration.has_key?('application_name')
           @db_configuration['application_name']
         else
-          Rails.application.class.to_s.split("::").first
+          Rails.application.class.to_s.split('::').first
         end
       end
 
       def resolve_config
         config = {}
         CONFIGURATION_FILES.each do |filename|
-          config_file = Rails.root.join("config", filename)
+          config_file = Rails.root.join('config', filename)
           if config_file.file?
             config = YAML.load(ERB.new(config_file.read).result)[Rails.env]
             config = config['mongodb_logger'] if config && config.has_key?('mongodb_logger')
