@@ -2,11 +2,11 @@
 require File.expand_path('../lib/mongodb_logger/version', __FILE__)
 
 Gem::Specification.new do |gem|
-  gem.authors       = ["Alexey Vasiliev"]
-  gem.email         = ["leopard.not.a@gmail.com"]
+  gem.authors       = ["Alexey Vasiliev", "Jeff Webb"]
+  gem.email         = ["leopard.not.a@gmail.com", "boowebb@gmail.com"]
   gem.description   = %q{MongoDB logger for Rails 3}
   gem.summary       = %q{MongoDB logger for Rails 3}
-  gem.homepage      = "http://mongodb-logger.catware.org"
+  gem.homepage      = "https://github.com/boowebb/mongodb_logger"
 
   gem.extra_rdoc_files  = [ "LICENSE", "README.md" ]
   gem.rdoc_options      = ["--charset=UTF-8"]

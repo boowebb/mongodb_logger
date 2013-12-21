@@ -1,3 +1,7 @@
+## v0.3.4
+
+* added support for mongo replsets via "hosts" parameter
+
 ## v0.3.3
 
 * Mount assets separately or compile it by rake task 
